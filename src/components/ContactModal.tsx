@@ -1,6 +1,6 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface ContactModalProps {
   open: boolean;
@@ -14,6 +14,32 @@ const ContactModal = ({ open, onOpenChange }: ContactModalProps) => {
   const [revenue, setRevenue] = useState("");
   const [hasDelivery, setHasDelivery] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false); // Novo estado
+
+  const [utms, setUtms] = useState({
+    utm_source: "",
+    utm_medium: "",
+    utm_campaign: "",
+    utm_content: "",
+    utm_term: "",
+    page_url: ""
+  });
+
+  useEffect(() => {
+    if (open) {
+      const searchParams = new URLSearchParams(window.location.search);
+      setUtms({
+        utm_source: searchParams.get("utm_source") || "",
+        utm_medium: searchParams.get("utm_medium") || "",
+        utm_campaign: searchParams.get("utm_campaign") || "",
+        utm_content: searchParams.get("utm_content") || "",
+        utm_term: searchParams.get("utm_term") || "",
+        page_url: window.location.href.split('?')[0]
+      });
+      // Reseta o estado de sucesso ao abrir o modal novamente
+      setIsSubmitted(false);
+    }
+  }, [open]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,33 +50,40 @@ const ContactModal = ({ open, onOpenChange }: ContactModalProps) => {
       email: email,
       telefone: phone,
       faturamento_mensal: revenue,
-      trabalha_com_delivery: hasDelivery
+      trabalha_com_delivery: hasDelivery,
+      ...utms,
+      data_envio: new Date().toISOString()
     };
 
     try {
-      // Substitua pela URL do seu webhook no n8n (Production ou Test)
-      const webhookUrl = "SUA_URL_DO_WEBHOOK_N8N_AQUI"; 
+      const webhookUrl = "https://nwn.ramonbarata.com.br/webhook/form_lp"; 
       
-      await fetch(webhookUrl, {
+      const response = await fetch(webhookUrl, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
 
-      alert("Obrigado! Entraremos em contato em breve.");
-      onOpenChange(false);
+      if (!response.ok) throw new Error("Erro no servidor");
+
+      // Em vez de alert, define como enviado
+      setIsSubmitted(true);
       
-      // Limpa os campos após o envio
+      // Limpa os campos
       setName("");
       setEmail("");
       setPhone("");
       setRevenue("");
       setHasDelivery("");
+
+      // Opcional: Fechar o modal automaticamente após 3 segundos
+      setTimeout(() => {
+        onOpenChange(false);
+      }, 3000);
+
     } catch (error) {
-      console.error("Erro ao enviar lead para o n8n:", error);
-      alert("Ocorreu um erro ao enviar. Tente novamente.");
+      console.error("Erro:", error);
+      alert("Ocorreu um erro. Tente novamente.");
     } finally {
       setIsLoading(false);
     }
@@ -58,71 +91,85 @@ const ContactModal = ({ open, onOpenChange }: ContactModalProps) => {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-card border-border text-foreground max-w-md">
-        <DialogHeader>
-          <DialogTitle className="text-2xl font-bold text-center">
-            Quero saber mais sobre o
-            <span className="text-primary"> Método V.E.L.A.</span>
-          </DialogTitle>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4 mt-4">
-          <Input
-            placeholder="Nome"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
-            className="bg-muted border-border text-foreground placeholder:text-muted-foreground"
-          />
-          <Input
-            type="email"
-            placeholder="Melhor e-mail"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            className="bg-muted border-border text-foreground placeholder:text-muted-foreground"
-          />
-          <Input
-            type="tel"
-            placeholder="Telefone (WhatsApp)"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            required
-            className="bg-muted border-border text-foreground placeholder:text-muted-foreground"
-          />
-          
-          <select
-            value={revenue}
-            onChange={(e) => setRevenue(e.target.value)}
-            required
-            className="flex h-10 w-full rounded-md border border-border bg-muted px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 text-foreground"
-          >
-            <option value="" disabled>Receita/faturamento mensal</option>
-            <option value="Ainda não faturo">Ainda não faturo</option>
-            <option value="Até R$ 10.000">Até R$ 10.000</option>
-            <option value="R$ 10.001 a R$ 50.000">R$ 10.001 a R$ 50.000</option>
-            <option value="R$ 50.001 a R$ 100.000">R$ 50.001 a R$ 100.000</option>
-            <option value="Mais de R$ 100.000">Mais de R$ 100.000</option>
-          </select>
+      <DialogContent className="bg-card border-border text-foreground max-w-md min-h-[300px] flex flex-col justify-center">
+        {isSubmitted ? (
+          // Mensagem de Agradecimento
+          <div className="flex flex-col items-center justify-center space-y-4 animate-in fade-in zoom-in duration-300">
+            <div className="text-5xl text-primary">✓</div>
+            <h2 className="text-3xl font-bold text-center">Obrigado!</h2>
+            <p className="text-muted-foreground text-center">
+              Recebemos seus dados e entraremos em contato em breve.
+            </p>
+          </div>
+        ) : (
+          // Formulário Original
+          <>
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-bold text-center">
+                Quero saber mais sobre o
+                <span className="text-primary"> Método V.E.L.A.</span>
+              </DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleSubmit} className="space-y-4 mt-4">
+              <Input
+                placeholder="Nome"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+                className="bg-muted border-border"
+              />
+              <Input
+                type="email"
+                placeholder="Melhor e-mail"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="bg-muted border-border"
+              />
+              <Input
+                type="tel"
+                placeholder="Telefone (WhatsApp)"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                required
+                className="bg-muted border-border"
+              />
+              
+              <select
+                value={revenue}
+                onChange={(e) => setRevenue(e.target.value)}
+                required
+                className="flex h-10 w-full rounded-md border border-border bg-muted px-3 py-2 text-sm"
+              >
+                <option value="" disabled>Receita/faturamento mensal</option>
+                <option value="Ainda não faturo">Ainda não faturo</option>
+                <option value="Até R$ 10.000">Até R$ 10.000</option>
+                <option value="R$ 10.001 a R$ 50.000">R$ 10.001 a R$ 50.000</option>
+                <option value="R$ 50.001 a R$ 100.000">R$ 50.001 a R$ 100.000</option>
+                <option value="Mais de R$ 100.000">Mais de R$ 100.000</option>
+              </select>
 
-          <select
-            value={hasDelivery}
-            onChange={(e) => setHasDelivery(e.target.value)}
-            required
-            className="flex h-10 w-full rounded-md border border-border bg-muted px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 text-foreground"
-          >
-            <option value="" disabled>Já trabalha com delivery?</option>
-            <option value="Sim">Sim</option>
-            <option value="Não">Não</option>
-          </select>
+              <select
+                value={hasDelivery}
+                onChange={(e) => setHasDelivery(e.target.value)}
+                required
+                className="flex h-10 w-full rounded-md border border-border bg-muted px-3 py-2 text-sm"
+              >
+                <option value="" disabled>Já trabalha com delivery?</option>
+                <option value="Sim">Sim</option>
+                <option value="Não">Não</option>
+              </select>
 
-          <button 
-            type="submit" 
-            disabled={isLoading} 
-            className="btn-cta w-full disabled:opacity-70 disabled:cursor-not-allowed transition-all"
-          >
-            {isLoading ? "Enviando..." : "Quero começar agora!"}
-          </button>
-        </form>
+              <button 
+                type="submit" 
+                disabled={isLoading} 
+                className="btn-cta w-full disabled:opacity-70 transition-all"
+              >
+                {isLoading ? "Enviando..." : "Quero começar agora!"}
+              </button>
+            </form>
+          </>
+        )}
       </DialogContent>
     </Dialog>
   );
