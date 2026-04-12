@@ -29,11 +29,9 @@ const Index = () => {
               </span>{" "}
               no caixa do seu Delivery.
             </h1>
-            <div className="space-y-3 max-w-sm">
-              <input placeholder="Email" className="w-full px-4 py-2 rounded bg-foreground text-background text-sm" />
-              <input placeholder="Phone" className="w-full px-4 py-2 rounded bg-foreground text-background text-sm" />
+            <div className="max-w-sm">
               <button className="btn-cta w-full" onClick={() => setModalOpen(true)}>
-                Enviar
+                EU QUERO COMEÇAR AGORA
               </button>
             </div>
           </div>
@@ -118,14 +116,14 @@ const Index = () => {
         <div className="container max-w-4xl mx-auto text-center">
           <h2 className="text-xl font-bold mb-8">O que mudará na sua vida com o método V.E.L.A.</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {["Vendas", "Alavancagem", "Escala", "Lucro"].map((item) => (
+            {["Vendas", "Escala", "Lucro", "Alavancagem"].map((item) => (
               <div key={item} className="bg-foreground text-background rounded-xl p-6 font-bold text-lg shadow-lg">
                 {item}
               </div>
             ))}
           </div>
           <p className="text-muted-foreground text-sm mt-6">
-            VALOR TOTAL DO QUE VOCÊ PRECISA PARA AGENDAR SUA SESSÃO = R$0,00
+            
           </p>
         </div>
       </section>
@@ -209,6 +207,7 @@ const Index = () => {
             <h2 className="text-3xl font-black mb-4 text-secondary">
               Quem é será seu mentor?
             </h2>
+            <h3 className="text-xl font-bold text-primary mb-4">Ramon Barata</h3>
             <p className="text-sm text-muted-foreground mb-3">
               Eu já faturei mais de R$5 milhões com delivery e agora quero te ajudar a alcançar os mesmos resultados. Com mais de 10 anos de experiência no mercado de food service.
             </p>
